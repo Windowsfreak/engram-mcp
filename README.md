@@ -36,6 +36,7 @@ graph TD
     end
 
     subgraph Embedders ["Worker Pool"]
+        SIDECAR["FastAPI / Uvicorn Sidecar (High-Speed Local/GPU)"]
         OLLAMA["Local/LAN Ollama (nomic-embed-text-v2-moe)"]
         OPENAI["OpenAI-Compatible / freellmapi (Fallback)"]
     end

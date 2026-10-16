@@ -34,9 +34,19 @@ type StorageConfig struct {
 
 // EmbedderConfig holds settings for vector embedding generation.
 type EmbedderConfig struct {
-	Provider string       `yaml:"provider"` // "ollama" or "openai"
-	Ollama   OllamaConfig `yaml:"ollama"`
-	OpenAI   OpenAIConfig `yaml:"openai"`
+	Provider string        `yaml:"provider"` // "sidecar", "ollama", or "openai"
+	Sidecar  SidecarConfig `yaml:"sidecar"`
+	Ollama   OllamaConfig  `yaml:"ollama"`
+	OpenAI   OpenAIConfig  `yaml:"openai"`
+}
+
+// SidecarConfig configures the dedicated Uvicorn/FastAPI embedding sidecar.
+type SidecarConfig struct {
+	BaseURL    string `yaml:"base_url"`
+	Model      string `yaml:"model"`
+	Dimensions int    `yaml:"dimensions"`
+	BatchSize  int    `yaml:"batch_size"`
+	TimeoutSec int    `yaml:"timeout_sec"`
 }
 
 // OllamaConfig configures the local/LAN Ollama service.
@@ -87,7 +97,14 @@ func DefaultConfig() *Config {
 			},
 		},
 		Embedder: EmbedderConfig{
-			Provider: "ollama",
+			Provider: "sidecar",
+			Sidecar: SidecarConfig{
+				BaseURL:    "http://localhost:8001",
+				Model:      "nomic-ai/nomic-embed-text-v2-moe",
+				Dimensions: 768,
+				BatchSize:  64,
+				TimeoutSec: 30,
+			},
 			Ollama: OllamaConfig{
 				BaseURL:    "http://localhost:11434",
 				Model:      "nomic-ai/nomic-embed-text-v2-moe",
@@ -136,6 +153,12 @@ func Load(path string) (*Config, error) {
 	}
 	if baseDir := os.Getenv("ENGRAM_BASE_DIR"); baseDir != "" {
 		cfg.Storage.BaseDir = baseDir
+	}
+	if embedProvider := os.Getenv("ENGRAM_EMBED_PROVIDER"); embedProvider != "" {
+		cfg.Embedder.Provider = embedProvider
+	}
+	if sidecarURL := os.Getenv("SIDECAR_BASE_URL"); sidecarURL != "" {
+		cfg.Embedder.Sidecar.BaseURL = sidecarURL
 	}
 	if ollamaURL := os.Getenv("OLLAMA_BASE_URL"); ollamaURL != "" {
 		cfg.Embedder.Ollama.BaseURL = ollamaURL

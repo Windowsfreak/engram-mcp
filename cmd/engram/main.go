@@ -160,9 +160,12 @@ func initDB(ctx context.Context, cfg *config.Config) (*db.DB, error) {
 
 func initServices(ctx context.Context, cfg *config.Config, database *db.DB) (*mcp.Service, *mcp.Handler, error) {
 	var emb embedder.Embedder
-	if cfg.Embedder.Provider == "openai" {
+	switch cfg.Embedder.Provider {
+	case "sidecar":
+		emb = embedder.NewSidecarEmbedder(cfg.Embedder.Sidecar)
+	case "openai":
 		emb = embedder.NewOpenAIEmbedder(cfg.Embedder.OpenAI)
-	} else {
+	default:
 		emb = embedder.NewOllamaEmbedder(cfg.Embedder.Ollama)
 	}
 

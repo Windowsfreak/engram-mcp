@@ -17,6 +17,24 @@ services:
       timeout: 5s
       retries: 5
 
+  embed-sidecar:
+    build:
+      context: ./sidecar
+      dockerfile: Dockerfile
+    container_name: engram-embed-sidecar
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      EMBED_MODEL: "nomic-ai/nomic-embed-text-v2-moe"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   engram:
     build:
       context: .
@@ -28,6 +46,8 @@ services:
     environment:
       DATABASE_URL: "postgres://postgres:postgres@pgvector:5432/engram?sslmode=disable"
       ENGRAM_BASE_DIR: "/data/workspaces"
+      SIDECAR_BASE_URL: "http://embed-sidecar:8001"
+      ENGRAM_EMBED_PROVIDER: "sidecar"
       OLLAMA_BASE_URL: "http://ollama:11434"
       ENGRAM_HTTP_ADDR: ":8080"
     volumes:
@@ -36,9 +56,11 @@ services:
     depends_on:
       pgvector:
         condition: service_healthy
+      embed-sidecar:
+        condition: service_healthy
     command: ["serve-http", "--config", "/app/config.yaml"]
 
-  # Optional local Ollama profile for 100% self-contained local testing
+  # Optional local Ollama profile for fallback or comparison
   ollama:
     image: ollama/ollama:latest
     container_name: engram-ollama
@@ -53,3 +75,4 @@ services:
 volumes:
   pgdata:
   ollama_models:
+  hf_cache:

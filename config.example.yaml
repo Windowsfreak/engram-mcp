@@ -13,8 +13,15 @@ storage:
     research: "./data/workspaces/research"
 
 embedder:
-  # Provider: "ollama" or "openai"
-  provider: "ollama"
+  # Provider: "sidecar" (FastAPI/Uvicorn, recommended), "ollama", or "openai"
+  provider: "sidecar"
+
+  sidecar:
+    base_url: "http://localhost:8001"
+    model: "nomic-ai/nomic-embed-text-v2-moe"
+    dimensions: 768
+    batch_size: 64
+    timeout_sec: 30
 
   ollama:
     base_url: "http://localhost:11434"

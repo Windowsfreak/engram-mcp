@@ -19,6 +19,12 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Embedder.Ollama.Dimensions != 768 {
 		t.Errorf("unexpected default dimensions: %d", cfg.Embedder.Ollama.Dimensions)
 	}
+	if cfg.Embedder.Sidecar.Model != "nomic-ai/nomic-embed-text-v2-moe" {
+		t.Errorf("unexpected sidecar model: %s", cfg.Embedder.Sidecar.Model)
+	}
+	if cfg.Embedder.Sidecar.Dimensions != 768 {
+		t.Errorf("unexpected sidecar dimensions: %d", cfg.Embedder.Sidecar.Dimensions)
+	}
 	if cfg.Search.RRFConstantK != 60 {
 		t.Errorf("unexpected default RRF constant: %d", cfg.Search.RRFConstantK)
 	}
