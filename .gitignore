@@ -20,6 +20,7 @@ workspaces/
 
 # Environment and local configs
 .env
+config.yaml
 config.local.yaml
 
 # IDEs

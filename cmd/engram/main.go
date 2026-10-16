@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,17 +21,39 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "", "Path to engram config.yaml file")
-	workspaceFlag := flag.String("workspace", "", "Override target workspace ID")
-	flag.Parse()
-
-	args := flag.Args()
+	var cmdArgs []string
 	command := "serve-stdio"
-	if len(args) > 0 {
-		command = args[0]
+	subcommands := map[string]bool{
+		"serve-stdio": true,
+		"serve-http":  true,
+		"migrate":     true,
+		"reindex":     true,
+		"version":     true,
 	}
 
-	cfg, err := config.Load(*configPath)
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		if !strings.HasPrefix(arg, "-") && subcommands[arg] && command == "serve-stdio" {
+			command = arg
+		} else {
+			cmdArgs = append(cmdArgs, arg)
+		}
+	}
+
+	fs := flag.NewFlagSet("engram", flag.ExitOnError)
+	configPath := fs.String("config", "", "Path to engram config.yaml file")
+	workspaceFlag := fs.String("workspace", "", "Override target workspace ID")
+	_ = fs.Parse(cmdArgs)
+
+	// Automatically load config.yaml in working directory if --config is omitted
+	finalConfigPath := *configPath
+	if finalConfigPath == "" {
+		if _, err := os.Stat("config.yaml"); err == nil {
+			finalConfigPath = "config.yaml"
+		}
+	}
+
+	cfg, err := config.Load(finalConfigPath)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
