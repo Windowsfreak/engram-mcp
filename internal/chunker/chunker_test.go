@@ -116,3 +116,29 @@ More content explaining reciprocal rank fusion and vector indexing.
 		}
 	}
 }
+
+func TestChunkerCRLFProcessing(t *testing.T) {
+	c := chunker.NewChunker("sidecar")
+
+	doc := &db.Document{
+		WorkspaceID: "default",
+		Path:        "/atlas/windows_note.md",
+		FileType:    "md",
+	}
+
+	crlfContent := "---\r\ntitle: \"Windows Note\"\r\ntags: [\"windows\", \"crlf\"]\r\n---\r\n\r\n# Section One\r\n\r\nParagraph with CRLF endings.\r\n\r\n## Section Two\r\n\r\nAnother paragraph with Windows line endings.\r\n"
+
+	result, err := c.ProcessDocument(doc, []byte(crlfContent))
+	if err != nil {
+		t.Fatalf("failed processing CRLF document: %v", err)
+	}
+
+	if result.Document.Title != "Windows Note" {
+		t.Errorf("expected title 'Windows Note', got: %s", result.Document.Title)
+	}
+
+	if len(result.Sections) < 2 {
+		t.Errorf("expected at least 2 sections, got: %d", len(result.Sections))
+	}
+}
+

@@ -119,15 +119,23 @@ graph TD
 - (Optional) [Ollama](https://ollama.ai) running `nomic-ai/nomic-embed-text-v2-moe`
 
 ### Installation
+
+**Option A: Pre-compiled binaries (Recommended)**
+Download the latest executable for your platform from [GitHub Releases](https://github.com/windowsfreak/engram-mcp/releases):
+- **Windows (x64):** `engram_windows_amd64.zip` (extract `engram.exe`)
+- **Linux (x64):** `engram_linux_amd64.tar.gz`
+- **macOS (Apple Silicon / Intel):** `engram_mac_arm64.tar.gz` / `engram_mac_amd64.tar.gz`
+
+**Option B: Build from source**
 ```bash
 git clone https://github.com/windowsfreak/engram-mcp.git
 cd engram-mcp
-go build -o engram ./cmd/engram
+go build -o engram ./cmd/engram      # On Windows: go build -o engram.exe ./cmd/engram
 ```
 
 ### Running with Claude Desktop or Google Antigravity
-Add to your MCP client configuration (e.g., `claude_desktop_config.json` or Antigravity MCP settings):
 
+**macOS / Linux:**
 ```json
 {
   "mcpServers": {
@@ -138,6 +146,19 @@ Add to your MCP client configuration (e.g., `claude_desktop_config.json` or Anti
   }
 }
 ```
+
+**Windows (`%APPDATA%\Claude\claude_desktop_config.json`):**
+```json
+{
+  "mcpServers": {
+    "engram": {
+      "command": "C:\\path\\to\\engram.exe",
+      "args": ["serve-stdio", "--config", "C:\\path\\to\\config.yaml"]
+    }
+  }
+}
+```
+*(Tip: Forward slashes `C:/path/to/engram.exe` are also valid in JSON configurations on Windows)*
 
 ---
 

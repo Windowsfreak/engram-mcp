@@ -43,7 +43,7 @@ func NewChunker(defaultProvider string) *Chunker {
 
 // ProcessDocument splits document content into parent sections and child chunks with embedding jobs.
 func (c *Chunker) ProcessDocument(doc *db.Document, rawContent []byte) (*ChunkResult, error) {
-	contentStr := string(rawContent)
+	contentStr := strings.ReplaceAll(string(rawContent), "\r\n", "\n")
 
 	// If CSV, convert to Markdown table first
 	if doc.FileType == "csv" || strings.HasSuffix(strings.ToLower(doc.Path), ".csv") {

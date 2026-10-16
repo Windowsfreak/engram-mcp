@@ -117,12 +117,41 @@ func TestVFSPathEscapes(t *testing.T) {
 		"/../etc/passwd",
 		"../../secret.txt",
 		"/atlas/../../outside.md",
+		"..\\..\\secret.txt",
+		"\\..\\secret.txt",
+		"C:\\Windows\\System32",
+		"C:/Windows/System32",
+		"d:\\data\\workspaces",
+		// UNC paths and device namespaces
+		`\\server\share\file.md`,
+		`//server/share/file.md`,
+		`\\?\C:\Windows\System32`,
+		`\\.\COM1`,
+		`file://remote-server/share/file.md`,
+		`file:///C:/Windows/System32/cmd.exe`,
 	}
 
 	for _, p := range illegalPaths {
 		_, err := diskVFS.NormalizePath(p)
 		if err != vfs.ErrPathEscapesRoot {
 			t.Errorf("expected ErrPathEscapesRoot for %s, got: %v", p, err)
+		}
+	}
+
+	// Valid Windows paths and file:// URIs should normalize to POSIX workspace paths
+	validPaths := map[string]string{
+		`atlas\sub\note.md`:                   "/atlas/sub/note.md",
+		`\atlas\sub\note.md`:                  "/atlas/sub/note.md",
+		`episodes\daily.md`:                   "/episodes/daily.md",
+		`file:///atlas/sub/note.md`:           "/atlas/sub/note.md",
+		`file://localhost/atlas/sub/note.md`:  "/atlas/sub/note.md",
+		`file:///atlas/sub/my%20note.md`:      "/atlas/sub/my note.md",
+		"file://" + filepath.ToSlash(tempDir) + "/atlas/note.md": "/atlas/note.md",
+	}
+	for input, expected := range validPaths {
+		norm, err := diskVFS.NormalizePath(input)
+		if err != nil || norm != expected {
+			t.Errorf("NormalizePath(%q) = %q, err: %v; want %q", input, norm, err, expected)
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -82,11 +83,67 @@ func (v *DiskVFS) RootDir() string {
 	return v.rootDir
 }
 
+// isDriveLetter checks if a path begins with a Windows drive letter (e.g. C:, D:).
+func isDriveLetter(p string) bool {
+	return len(p) >= 2 && (('a' <= p[0] && p[0] <= 'z') || ('A' <= p[0] && p[0] <= 'Z')) && p[1] == ':'
+}
+
 // NormalizePath normalizes a workspace-relative path, ensuring leading slash and no directory traversal outside root.
+// It supports plain workspace paths (/atlas/note.md), Windows backslash variants (\atlas\note.md),
+// file:// URIs (file:///atlas/note.md, file:///C:/workspaces/default/atlas/note.md),
+// and strictly rejects UNC network paths (\\server\share, //server/share) or attempts to escape workspace root.
 func (v *DiskVFS) NormalizePath(relPath string) (string, error) {
+	if relPath == "" {
+		return "/", nil
+	}
+
+	// 1. Support file:// URI scheme
+	if strings.HasPrefix(relPath, "file://") {
+		u, err := url.Parse(relPath)
+		if err != nil {
+			return "", ErrPathEscapesRoot
+		}
+		// Remote UNC file URIs (e.g. file://server/share) specify a remote host
+		if u.Host != "" && u.Host != "localhost" {
+			return "", ErrPathEscapesRoot
+		}
+		unescaped, err := url.PathUnescape(u.Path)
+		if err != nil {
+			return "", ErrPathEscapesRoot
+		}
+		relPath = unescaped
+		// Handle Windows drive in URL path: /C:/path -> C:/path
+		if len(relPath) >= 3 && relPath[0] == '/' && isDriveLetter(relPath[1:]) {
+			relPath = relPath[1:]
+		}
+	}
+
+	// 2. Reject Windows UNC paths and device namespaces (e.g. \\server\share, //server/share, \\?\, \\.\)
+	if strings.HasPrefix(relPath, `\\`) || strings.HasPrefix(relPath, `//`) {
+		return "", ErrPathEscapesRoot
+	}
+	if strings.Contains(relPath, `\?\`) || strings.Contains(relPath, `/?/`) ||
+		strings.Contains(relPath, `\.\`) || strings.Contains(relPath, `/./`) {
+		return "", ErrPathEscapesRoot
+	}
+
+	// 3. Normalize all backslashes to forward slashes for uniform processing
 	relPath = strings.ReplaceAll(relPath, "\\", "/")
-	
-	// Check for raw traversal patterns before root stripping
+
+	// 4. If an absolute OS path pointing within v.rootDir was provided, convert it to a relative workspace path
+	rootSlash := filepath.ToSlash(v.rootDir)
+	if strings.HasPrefix(relPath, rootSlash+"/") {
+		relPath = strings.TrimPrefix(relPath, rootSlash)
+	} else if relPath == rootSlash {
+		return "/", nil
+	}
+
+	// 5. Reject remaining Windows drive letters (e.g. C:, D:) pointing outside root
+	if isDriveLetter(relPath) {
+		return "", ErrPathEscapesRoot
+	}
+
+	// 6. Check for raw directory traversal patterns before root stripping
 	if strings.HasPrefix(relPath, "../") || relPath == ".." || strings.Contains(relPath, "/../") || strings.HasSuffix(relPath, "/..") {
 		return "", ErrPathEscapesRoot
 	}
