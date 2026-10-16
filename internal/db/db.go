@@ -227,6 +227,16 @@ func (db *DB) MoveDocument(ctx context.Context, workspaceID, oldPath, newPath st
 		return fmt.Errorf("failed to update document path: %w", err)
 	}
 
+	// Update chunks document path
+	_, err = tx.Exec(ctx, `
+		UPDATE chunks
+		SET document_path = $1
+		WHERE workspace_id = $2 AND document_path = $3
+	`, newPath, workspaceID, oldPath)
+	if err != nil {
+		return fmt.Errorf("failed to update chunks document path: %w", err)
+	}
+
 	// Update any queued embedding jobs
 	_, err = tx.Exec(ctx, `
 		UPDATE embedding_jobs
