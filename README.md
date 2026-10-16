@@ -113,10 +113,73 @@ graph TD
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Go 1.24+
-- PostgreSQL 16+ with `pgvector` extension enabled
-- (Optional) [Ollama](https://ollama.ai) running `nomic-ai/nomic-embed-text-v2-moe`
+### Prerequisites & Infrastructure
+
+You need a PostgreSQL database with `pgvector` enabled and an embedding provider. **You do NOT need Python or a local interpreter installed**—all dependencies can be started with a single Docker command, or you can use native services:
+
+#### 1. Instant PostgreSQL + pgvector (Recommended)
+If you do not have PostgreSQL with `pgvector` installed on your machine, simply launch it via Docker:
+```bash
+# Starts PostgreSQL 16 + pgvector and the embedding sidecar in the background
+docker compose up -d pgvector embed-sidecar
+```
+*(Your database will be available at `localhost:5432` with user/password `postgres/postgres`, matching `config.yaml` out of the box).*
+
+#### 2. Choosing the Best Embedding Method for Your Hardware
+
+Engram-MCP supports three embedder backends (configured via `provider` in `config.yaml`). Because vector embedding is compute-intensive, your optimal setup depends on your operating system and hardware:
+
+| Platform | Recommended Method | Why | Setup |
+| :--- | :--- | :--- | :--- |
+| **macOS (M1/M2/M3/M4)** | **Native Ollama** *(or Native Sidecar via `uv`)* | Docker on macOS **cannot** access Apple Silicon Metal GPU (`mps`) and falls back to slow CPU emulation. Native Ollama uses Metal out of the box. | `ollama pull nomic-embed-text-v2-moe`<br>Set `provider: ollama` |
+| **Linux (NVIDIA GPU)** | **Docker Sidecar** | Docker on Linux has native CUDA passthrough with 0% container performance penalty. | `docker compose up -d embed-sidecar`<br>Set `provider: sidecar` |
+| **Windows (NVIDIA GPU)** | **Docker Sidecar** or **Native Ollama** | WSL2 provides near-native CUDA GPU passthrough to Docker; Native Ollama runs directly on Windows CUDA. | `docker compose up -d embed-sidecar` or native Ollama |
+| **No Local GPU / Cloud** | **OpenAI-Compatible** | Zero local compute or memory overhead. Offloads embeddings to any remote endpoint (e.g. freellmapi). | Set `provider: openai` + API key |
+
+##### How to start each embedding option:
+
+- **Method A: Native Ollama (Recommended for Apple Silicon Mac)**
+  ```bash
+  ollama pull nomic-embed-text-v2-moe
+  ```
+  In `config.yaml`:
+  ```yaml
+  embedder:
+    provider: "ollama"
+    ollama:
+      base_url: "http://localhost:11434"
+      model: "nomic-embed-text-v2-moe"
+  ```
+
+- **Method B: Docker Sidecar (Recommended for Linux / WSL2 with NVIDIA GPU)**
+  ```bash
+  docker compose up -d embed-sidecar
+  ```
+  In `config.yaml`:
+  ```yaml
+  embedder:
+    provider: "sidecar"
+    sidecar:
+      base_url: "http://localhost:8001"
+  ```
+
+- **Method C: Native Python Sidecar via `uv` (For Apple Silicon or bare-metal setups)**
+  ```bash
+  uv run --python 3.12 --with fastapi --with "uvicorn[standard]" --with sentence-transformers --with "transformers<5.0.0" --with torch --with einops python sidecar/main.py
+  ```
+
+- **Method D: OpenAI / Compatible API (Zero local GPU required)**
+  In `config.yaml`:
+  ```yaml
+  embedder:
+    provider: "openai"
+    openai:
+      base_url: "https://api.openai.com/v1"
+      api_key: "your-api-key"
+      model: "text-embedding-3-small"
+  ```
+
+---
 
 ### Installation
 
