@@ -1,6 +1,6 @@
 # TASK TRACKER: Engram-MCP
 
-This document tracks execution progress across all phases defined in [NORTH_STAR.md](file:///Users/bjoern/projects/bjoern/engram-mcp/NORTH_STAR.md). It is updated atomically after every task and test verification.
+This document tracks execution progress across all phases defined in [NORTH_STAR.md](./NORTH_STAR.md). It is updated atomically after every task and test verification.
 
 ---
 
