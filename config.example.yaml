@@ -1,0 +1,45 @@
+# Engram-MCP Example Configuration
+
+database:
+  url: "postgres://postgres:postgres@localhost:5432/engram?sslmode=disable"
+  max_connections: 10
+  min_connections: 2
+
+storage:
+  base_dir: "./data/workspaces"
+  default_workspace_id: "default"
+  workspaces:
+    default: "./data/workspaces/default"
+    research: "./data/workspaces/research"
+
+embedder:
+  # Provider: "ollama" or "openai"
+  provider: "ollama"
+
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "nomic-ai/nomic-embed-text-v2-moe"
+    dimensions: 768
+    timeout_sec: 60
+
+  openai:
+    base_url: "https://api.openai.com/v1"
+    api_key: "sk-your-openai-or-freellmapi-key"
+    model: "text-embedding-3-small"
+    dimensions: 768
+    batch_size: 32
+    max_concurrency: 4
+    timeout_sec: 60
+
+search:
+  default_top_k: 5
+  rrf_constant_k: 60
+  graveyard_prefixes:
+    - "/graveyard/"
+    - "/graveyard"
+
+server:
+  http_addr: ":8080"
+  bearer_tokens:
+    # "secret-token-alice": "default"
+    # "secret-token-bob": "research"

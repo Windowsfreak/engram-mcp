@@ -1,0 +1,47 @@
+# Caddyfile Example for Engram-MCP + Copyparty Reverse Proxy
+
+engram.yourdomain.com {
+    # Automatic HTTPS with Let's Encrypt / ZeroSSL
+    encode zstd gzip
+
+    # Logging
+    log {
+        output file /var/log/caddy/engram.log
+    }
+
+    # Route 1: MCP Server Endpoints (Streamable SSE & JSON-RPC)
+    handle /mcp* {
+        reverse_proxy localhost:8080 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    handle /rpc* {
+        reverse_proxy localhost:8080
+    }
+
+    handle /sse* {
+        # Critical for SSE: disable buffering so tokens stream in real time
+        reverse_proxy localhost:8080 {
+            flush_interval -1
+        }
+    }
+
+    handle /messages* {
+        reverse_proxy localhost:8080
+    }
+
+    handle /health {
+        reverse_proxy localhost:8080
+    }
+
+    # Route 2: Copyparty / WebDAV (Zero-UI Filesystem Browser & Remote Uploads)
+    # Allows managing the /workspaces/ directory via Web browser or WebDAV from Obsidian
+    handle /files* {
+        reverse_proxy localhost:3923 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+}

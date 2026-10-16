@@ -1,0 +1,32 @@
+# Binaries
+bin/
+/engram
+/engram-mcp
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.html
+
+# Data & local workspaces
+data/
+workspaces/
+.trash/
+
+# Environment and local configs
+.env
+config.local.yaml
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*~
+
+# Documentation archive
+docs/archive/

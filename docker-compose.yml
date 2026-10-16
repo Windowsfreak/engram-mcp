@@ -1,0 +1,55 @@
+services:
+  pgvector:
+    image: pgvector/pgvector:pg16
+    container_name: engram-pgvector
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: engram
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d engram"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  engram:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: engram-mcp
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@pgvector:5432/engram?sslmode=disable"
+      ENGRAM_BASE_DIR: "/data/workspaces"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      ENGRAM_HTTP_ADDR: ":8080"
+    volumes:
+      - ./data/workspaces:/data/workspaces
+      - ./config.yaml:/app/config.yaml:ro
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    command: ["serve-http", "--config", "/app/config.yaml"]
+
+  # Optional local Ollama profile for 100% self-contained local testing
+  ollama:
+    image: ollama/ollama:latest
+    container_name: engram-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    profiles:
+      - local-ollama
+
+volumes:
+  pgdata:
+  ollama_models:
