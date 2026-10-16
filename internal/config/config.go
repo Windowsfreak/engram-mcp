@@ -173,8 +173,24 @@ func Load(path string) (*Config, error) {
 		cfg.Server.HTTPAddr = httpAddr
 	}
 
-	// Normalize workspace paths
+	// Normalize workspace paths relative to config file directory
+	configDir := "."
+	if path != "" {
+		configDir = filepath.Dir(path)
+	}
+
+	if !filepath.IsAbs(cfg.Storage.BaseDir) {
+		cfg.Storage.BaseDir = filepath.Join(configDir, cfg.Storage.BaseDir)
+	}
+	absBase, err := filepath.Abs(cfg.Storage.BaseDir)
+	if err == nil {
+		cfg.Storage.BaseDir = absBase
+	}
+
 	for wsID, dir := range cfg.Storage.Workspaces {
+		if !filepath.IsAbs(dir) {
+			dir = filepath.Join(configDir, dir)
+		}
 		absPath, err := filepath.Abs(dir)
 		if err == nil {
 			cfg.Storage.Workspaces[wsID] = absPath
